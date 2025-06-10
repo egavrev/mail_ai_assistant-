@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 #my config file
-eaia/main/config.yaml
+config.yaml
 # C extensions
 *.so
 

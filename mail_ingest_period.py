@@ -1,36 +1,32 @@
 import argparse
 import asyncio
 from typing import Optional
-from eaia.gmail import fetch_group_emails
-from eaia.main.config import get_config
-from langgraph_sdk import get_client
-import httpx
+from graph_processor import graph_processor
+from mail_processor import fetch_emails
+
 import uuid
 import hashlib
-from eaia.graph_processor import graph_processor
+import datetime
+
+
+
 #####
 # This script is used to ingest emails from a given email address for a given period of time.
 # period is defining in days
 async def main(
-    url: Optional[str] = None,
     start_date: datetime.datetime = datetime.datetime.now() - datetime.timedelta(days=30),
     end_date: datetime.datetime = datetime.datetime.now(),
     gmail_token: Optional[str] = None,
     gmail_secret: Optional[str] = None,
-    early: bool = True,
-    rerun: bool = False,
-    email: Optional[str] = None,
-    period: int = 1,
+    email_address: Optional[str] = None,
 ):
-    if email is None:
-        email_address = get_config({"configurable": {}})["email"]
-    else:
-        email_address = email
+    
     
     #TODO 1: revuild fetch_group_emails to fetch emails for a given period
-    for email in fetch_group_emails(
+    for email in fetch_emails(
         email_address,
-        minutes_since=minutes_since,
+        start_date=start_date,
+        end_date=end_date,
         gmail_token=gmail_token,
         gmail_secret=gmail_secret,
     ):
@@ -59,28 +55,16 @@ async def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--url",
-        type=str,
-        default=None,
-        help="URL to run against",
+        "--start-date",
+        type=datetime.datetime,
+        default=datetime.datetime.now() - datetime.timedelta(days=30),
+        help="The start date to ingest emails from in YYYY-MM-DD format",
     )
     parser.add_argument(
-        "--early",
-        type=int,
-        default=1,
-        help="whether to break when encountering seen emails",
-    )
-    parser.add_argument(
-        "--rerun",
-        type=int,
-        default=0,
-        help="whether to rerun all emails",
-    )
-    parser.add_argument(
-        "--minutes-since",
-        type=int,
-        default=60,
-        help="Only process emails that are less than this many minutes old.",
+        "--end-date",
+        type=datetime.datetime,
+        default=datetime.datetime.now(),
+        help="The end date to ingest emails to in YYYY-MM-DD format",
     )
     parser.add_argument(
         "--gmail-token",
@@ -95,21 +79,19 @@ if __name__ == "__main__":
         help="The creds to use in communicating with the Gmail API.",
     )
     parser.add_argument(
-        "--email",
+        "--email-address",
         type=str,
         default=None,
-        help="The email address to use",
+        help="The email address to use to fetch emails from",
     )
 
     args = parser.parse_args()
     asyncio.run(
         main(
-            url=args.url,
-            minutes_since=args.minutes_since,
+            start_date=args.start_date,
+            end_date=args.end_date,
             gmail_token=args.gmail_token,
             gmail_secret=args.gmail_secret,
-            early=bool(args.early),
-            rerun=bool(args.rerun),
-            email=args.email,
+            email_address=args.email_address,
         )
     )
