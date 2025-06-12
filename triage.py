@@ -51,6 +51,7 @@ Subject: {subject}
 def triage_input(state: State, config: RunnableConfig, store: BaseStore):
     model = config["configurable"].get("model", "gpt-4o")
     llm = ChatOpenAI(model=model, temperature=0)
+    print("state", state)
     #examples = await get_few_shot_examples(state["email"], store, config)
     #TODO: add fewshot examples link iht store
     examples = ""
@@ -72,6 +73,7 @@ def triage_input(state: State, config: RunnableConfig, store: BaseStore):
         tool_choice={"type": "function", "function": {"name": "RespondTo"}}
     )
     response =  model.invoke(input_message)
+    print("response", response)
     if len(state["messages"]) > 0:
         delete_messages = [RemoveMessage(id=m.id) for m in state["messages"]]
         return {"triage": response, "messages": delete_messages}

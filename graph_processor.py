@@ -3,11 +3,16 @@ import json
 from typing import TypedDict, Literal
 from langgraph.graph import END, StateGraph
 from langchain_core.messages import HumanMessage
-
+from pathlib import Path
 from config import get_config
 from langchain_core.messages import ToolMessage
 from triage import triage_input
 from schemas import State
+
+
+from PIL import Image
+
+
 
 def route_after_triage(
     state: State,
@@ -128,13 +133,17 @@ def send_email_node(state, config):
 
 def mark_as_read_node(state):
     #mark_as_read(state["email"]["id"])
+    print(">>>>> mark_as_read_node", state)
     pass
   
 
 def human_node(state: State):
+    print(">>>>> human_node", state)
     pass
 
+
 def notify(state: State):
+    print(">>>>> notify", state)
     pass
 
 
@@ -151,6 +160,13 @@ graph_builder.add_conditional_edges("triage_input", route_after_triage)
 graph_builder.set_entry_point("triage_input")
 graph_builder.add_edge("mark_as_read_node", END)
 graph_processor = graph_builder.compile()
+
+
+
+#save graph image to file 
+_ROOT = Path(__file__).parent.absolute()
+img = Image.open(graph_processor.get_graph(xray=True).draw_mermaid_png())
+img.save(str(_ROOT / "graph.png"))
 
 
 '''

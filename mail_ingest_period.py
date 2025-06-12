@@ -8,6 +8,7 @@ import uuid
 import hashlib
 import datetime
 from datetime import datetime as dt
+import json
 
 
 def parse_date(date_str):
@@ -41,8 +42,7 @@ def main(
             uuid.UUID(hex=hashlib.md5(email["thread_id"].encode("UTF-8")).hexdigest())
         )
         #TODO 2: add graph call
-        print("Email date :", email["send_time"])
-        result =  graph_processor.invoke(email)
+        result =  graph_processor.invoke({"email":email})
         break
         
 
