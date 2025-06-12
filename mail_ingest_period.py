@@ -1,13 +1,20 @@
 import argparse
 import asyncio
 from typing import Optional
-#from graph_processor import graph_processor
+from graph_processor import graph_processor
 from mail_processor import fetch_emails
 
 import uuid
 import hashlib
 import datetime
+from datetime import datetime as dt
 
+
+def parse_date(date_str):
+    try:
+        return dt.strptime(date_str, '%Y-%m-%d')
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f'Invalid date format. Please use YYYY-MM-DD format: {e}')
 
 
 #####
@@ -20,7 +27,7 @@ def main(
     gmail_secret: Optional[str] = None,
     email_address: Optional[str] = None,
 ):
-    
+   
     
     #TODO 1: revuild fetch_group_emails to fetch emails for a given period
     for email in fetch_emails(
@@ -34,16 +41,10 @@ def main(
             uuid.UUID(hex=hashlib.md5(email["thread_id"].encode("UTF-8")).hexdigest())
         )
         #TODO 2: add graph call
-        #result = await graph_processor.ainvoke(email)
-        recent_email = thread_info["metadata"].get("email_id")
-        if recent_email == email["id"]:
-            if early:
-                break
-            else:
-                if rerun:
-                    pass
-                else:
-                    continue
+        print("Email date :", email["send_time"])
+        result =  graph_processor.invoke(email)
+        break
+        
 
         
 
@@ -52,13 +53,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--start-date",
-        type=datetime.datetime,
+        type=parse_date,
         default=datetime.datetime.now() - datetime.timedelta(days=30),
         help="The start date to ingest emails from in YYYY-MM-DD format",
     )
     parser.add_argument(
         "--end-date",
-        type=datetime.datetime,
+        type=parse_date,
         default=datetime.datetime.now(),
         help="The end date to ingest emails to in YYYY-MM-DD format",
     )

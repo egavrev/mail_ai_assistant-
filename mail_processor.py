@@ -22,6 +22,8 @@ _SECRETS_DIR = _ROOT / ".secrets"
 _SECRETS_PATH = str(_SECRETS_DIR / "secrets.json")
 _TOKEN_PATH = str(_SECRETS_DIR / "token.json")
 
+from dotenv import load_dotenv
+load_dotenv()
 
 class EmailData(TypedDict):
     id: str
@@ -99,7 +101,16 @@ def fetch_emails(
     gmail_token: str | None = None,
     gmail_secret: str | None = None,
 ) -> Iterable[EmailData]:
+    print("Token path :=>", _TOKEN_PATH)
+    print("Secrets path :=>", _SECRETS_PATH)
     creds = get_credentials(gmail_token, gmail_secret)
+    print("creds", creds)
+
+    print("start_date", start_date)
+    print("end_date", end_date)
+    print("gmail_token", gmail_token)
+    print("gmail_secret", gmail_secret)
+    print("to_email", to_email)
 
     service = build("gmail", "v1", credentials=creds)
     after = int(start_date.timestamp())

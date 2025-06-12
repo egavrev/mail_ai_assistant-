@@ -3,44 +3,25 @@ import json
 from typing import TypedDict, Literal
 from langgraph.graph import END, StateGraph
 from langchain_core.messages import HumanMessage
-from eaia.main.triage import (
-    triage_input,
-)
-from eaia.main.draft_response import draft_response
-from eaia.main.find_meeting_time import find_meeting_time
-from eaia.main.rewrite import rewrite
-from eaia.main.config import get_config
-from langchain_core.messages import ToolMessage
-from eaia.main.human_inbox import (
-    send_message,
-    send_email_draft,
-    notify,
-    send_cal_invite,
-)
-from eaia.gmail import (
-    send_email,
-    mark_as_read,
-    send_calendar_invite,
-)
-from eaia.schemas import (
-    State,
-)
 
+from config import get_config
+from langchain_core.messages import ToolMessage
+from triage import triage_input
+from schemas import State
 
 def route_after_triage(
     state: State,
-) -> Literal["draft_response", "mark_as_read_node", "notify"]:
-    if state["triage"].response == "email":
-        return "draft_response"
-    elif state["triage"].response == "no":
+    #TODO: add draft_response
+) -> Literal["mark_as_read_node", "notify"]:
+    if state["triage"].response == "no":
         return "mark_as_read_node"
     elif state["triage"].response == "notify":
         return "notify"
-    elif state["triage"].response == "question":
-        return "draft_response"
     else:
         raise ValueError
 
+from dotenv import load_dotenv
+load_dotenv()
 
 def take_action(
     state: State,
@@ -146,10 +127,14 @@ def send_email_node(state, config):
 
 
 def mark_as_read_node(state):
-    mark_as_read(state["email"]["id"])
-
+    #mark_as_read(state["email"]["id"])
+    pass
+  
 
 def human_node(state: State):
+    pass
+
+def notify(state: State):
     pass
 
 
@@ -157,6 +142,18 @@ class ConfigSchema(TypedDict):
     db_id: int
     model: str
 
+
+graph_builder = StateGraph(State, config_schema=ConfigSchema)
+graph_builder.add_node(triage_input)
+graph_builder.add_node(mark_as_read_node)
+graph_builder.add_node(notify)
+graph_builder.add_conditional_edges("triage_input", route_after_triage)
+graph_builder.set_entry_point("triage_input")
+graph_builder.add_edge("mark_as_read_node", END)
+graph_processor = graph_builder.compile()
+
+
+'''
 
 graph_builder = StateGraph(State, config_schema=ConfigSchema)
 graph_builder.add_node(human_node)
@@ -186,4 +183,5 @@ graph_builder.add_edge("send_email_draft", "human_node")
 graph_builder.add_edge("mark_as_read_node", END)
 graph_builder.add_edge("notify", "human_node")
 graph_builder.add_conditional_edges("human_node", enter_after_human)
-graph_processor = graph_builder.compile()
+graph_processor = graph_builder.compile()"""
+'''
