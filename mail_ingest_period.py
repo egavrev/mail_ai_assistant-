@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 from typing import Optional
-from graph_processor import graph_processor
+#from graph_processor import graph_processor
 from mail_processor import fetch_emails
 
 import uuid
@@ -13,7 +13,7 @@ import datetime
 #####
 # This script is used to ingest emails from a given email address for a given period of time.
 # period is defining in days
-async def main(
+def main(
     start_date: datetime.datetime = datetime.datetime.now() - datetime.timedelta(days=30),
     end_date: datetime.datetime = datetime.datetime.now(),
     gmail_token: Optional[str] = None,
@@ -34,10 +34,7 @@ async def main(
             uuid.UUID(hex=hashlib.md5(email["thread_id"].encode("UTF-8")).hexdigest())
         )
         #TODO 2: add graph call
-        result = await graph_processor.ainvoke(email)
-        if "user_respond" in email:
-            await client.threads.update_state(thread_id, None, as_node="__end__")
-            continue
+        #result = await graph_processor.ainvoke(email)
         recent_email = thread_info["metadata"].get("email_id")
         if recent_email == email["id"]:
             if early:
@@ -47,7 +44,6 @@ async def main(
                     pass
                 else:
                     continue
-        await client.threads.update(thread_id, metadata={"email_id": email["id"]})
 
         
 
@@ -86,12 +82,10 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    asyncio.run(
-        main(
-            start_date=args.start_date,
-            end_date=args.end_date,
-            gmail_token=args.gmail_token,
-            gmail_secret=args.gmail_secret,
-            email_address=args.email_address,
-        )
+    main(
+        start_date=args.start_date,
+        end_date=args.end_date,
+        gmail_token=args.gmail_token,
+        gmail_secret=args.gmail_secret,
+        email_address=args.email_address,
     )

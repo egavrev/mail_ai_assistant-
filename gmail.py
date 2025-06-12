@@ -1,7 +1,8 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, time
 from pathlib import Path
-from typing import Iterable, TypedDict
+from typing import Iterable
+import pytz
 import os
 
 from dateutil import parser
@@ -10,6 +11,14 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import base64
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import email.utils
+
+from langchain_core.tools import tool
+from langchain_core.pydantic_v1 import BaseModel, Field
+
+from schemas import EmailData
 
 logger = logging.getLogger(__name__)
 _SCOPES = [
@@ -22,16 +31,8 @@ _SECRETS_DIR = _ROOT / ".secrets"
 _SECRETS_PATH = str(_SECRETS_DIR / "secrets.json")
 _TOKEN_PATH = str(_SECRETS_DIR / "token.json")
 
-
-class EmailData(TypedDict):
-    id: str
-    thread_id: str
-    from_email: str
-    subject: str
-    page_content: str
-    send_time: str
-    to_email: str
-
+print("_SECRETS_PATH", _SECRETS_PATH )
+print("_TOKEN_PATH", _TOKEN_PATH)
 
 def get_credentials(
     gmail_token: str | None = None, gmail_secret: str | None = None
@@ -92,20 +93,92 @@ def parse_time(send_time: str):
         raise ValueError(f"Error parsing time: {send_time} - {e}")
 
 
-def fetch_emails(
+def create_message(sender, to, subject, message_text, thread_id, original_message_id):
+    message = MIMEMultipart()
+    message["to"] = ", ".join(to)
+    message["from"] = sender
+    message["subject"] = subject
+    message["In-Reply-To"] = original_message_id
+    message["References"] = original_message_id
+    message["Message-ID"] = email.utils.make_msgid()
+    msg = MIMEText(message_text)
+    message.attach(msg)
+    raw = base64.urlsafe_b64encode(message.as_bytes())
+    raw = raw.decode()
+    return {"raw": raw, "threadId": thread_id}
+
+
+def get_recipients(
+    headers,
+    email_address,
+    addn_receipients=None,
+):
+    recipients = set(addn_receipients or [])
+    sender = None
+    for header in headers:
+        if header["name"].lower() in ["to", "cc"]:
+            recipients.update(header["value"].replace(" ", "").split(","))
+        if header["name"].lower() == "from":
+            sender = header["value"]
+    if sender:
+        recipients.add(sender)  # Ensure the original sender is included in the response
+    for r in list(recipients):
+        if email_address in r:
+            recipients.remove(r)
+    return list(recipients)
+
+
+def send_message(service, user_id, message):
+    message = service.users().messages().send(userId=user_id, body=message).execute()
+    return message
+
+
+def send_email(
+    email_id,
+    response_text,
+    email_address,
+    gmail_token: str | None = None,
+    gmail_secret: str | None = None,
+    addn_receipients=None,
+):
+    creds = get_credentials(gmail_token, gmail_secret)
+
+    service = build("gmail", "v1", credentials=creds)
+    message = service.users().messages().get(userId="me", id=email_id).execute()
+
+    headers = message["payload"]["headers"]
+    message_id = next(
+        header["value"] for header in headers if header["name"].lower() == "message-id"
+    )
+    thread_id = message["threadId"]
+
+    # Get recipients and sender
+    recipients = get_recipients(headers, email_address, addn_receipients)
+
+    # Create the response
+    subject = next(
+        header["value"] for header in headers if header["name"].lower() == "subject"
+    )
+    response_subject = subject
+    response_message = create_message(
+        "me", recipients, response_subject, response_text, thread_id, message_id
+    )
+    # Send the response
+    send_message(service, "me", response_message)
+
+
+def fetch_group_emails(
     to_email,
-    start_date: datetime,
-    end_date: datetime,
+    minutes_since: int = 30,
     gmail_token: str | None = None,
     gmail_secret: str | None = None,
 ) -> Iterable[EmailData]:
     creds = get_credentials(gmail_token, gmail_secret)
 
     service = build("gmail", "v1", credentials=creds)
-    after = int(start_date.timestamp())
-    before = int(end_date.timestamp())
+    after = int((datetime.now() - timedelta(minutes=minutes_since)).timestamp())
 
-    query = f"(to:{to_email} OR from:{to_email}) after:{after} before:{before}"
+    query = f"(to:{to_email} OR from:{to_email}) after:{after}"
     messages = []
     nextPageToken = None
     # Fetch messages matching the query
@@ -208,6 +281,51 @@ def mark_as_read(
     ).execute()
 
 
+class CalInput(BaseModel):
+    date_strs: list[str] = Field(
+        description="The days for which to retrieve events. Each day should be represented by dd-mm-yyyy string."
+    )
+
+
+@tool(args_schema=CalInput)
+def get_events_for_days(date_strs: list[str]):
+    """
+    Retrieves events for a list of days. If you want to check for multiple days, call this with multiple inputs.
+
+    Input in the format of ['dd-mm-yyyy', 'dd-mm-yyyy']
+
+    Args:
+    date_strs: The days for which to retrieve events (dd-mm-yyyy string).
+
+    Returns: availability for those days.
+    """
+
+    creds = get_credentials(None, None)
+    service = build("calendar", "v3", credentials=creds)
+    results = ""
+    for date_str in date_strs:
+        # Convert the date string to a datetime.date object
+        day = datetime.strptime(date_str, "%d-%m-%Y").date()
+
+        start_of_day = datetime.combine(day, time.min).isoformat() + "Z"
+        end_of_day = datetime.combine(day, time.max).isoformat() + "Z"
+
+        events_result = (
+            service.events()
+            .list(
+                calendarId="primary",
+                timeMin=start_of_day,
+                timeMax=end_of_day,
+                singleEvents=True,
+                orderBy="startTime",
+            )
+            .execute()
+        )
+        events = events_result.get("items", [])
+
+        results += f"***FOR DAY {date_str}***\n\n" + print_events(events)
+    return results
+
 
 def format_datetime_with_timezone(dt_str, timezone="US/Pacific"):
     """
@@ -253,3 +371,51 @@ def print_events(events):
         result += "-" * 40 + "\n"
     return result
 
+
+def send_calendar_invite(
+    emails, title, start_time, end_time, email_address, timezone="PST"
+):
+    creds = get_credentials(None, None)
+    service = build("calendar", "v3", credentials=creds)
+
+    # Parse the start and end times
+    start_datetime = datetime.fromisoformat(start_time)
+    end_datetime = datetime.fromisoformat(end_time)
+    emails = list(set(emails + [email_address]))
+    event = {
+        "summary": title,
+        "start": {
+            "dateTime": start_datetime.isoformat(),
+            "timeZone": timezone,
+        },
+        "end": {
+            "dateTime": end_datetime.isoformat(),
+            "timeZone": timezone,
+        },
+        "attendees": [{"email": email} for email in emails],
+        "reminders": {
+            "useDefault": False,
+            "overrides": [
+                {"method": "email", "minutes": 24 * 60},
+                {"method": "popup", "minutes": 10},
+            ],
+        },
+        "conferenceData": {
+            "createRequest": {
+                "requestId": f"{title}-{start_datetime.isoformat()}",
+                "conferenceSolutionKey": {"type": "hangoutsMeet"},
+            }
+        },
+    }
+
+    try:
+        service.events().insert(
+            calendarId="primary",
+            body=event,
+            sendNotifications=True,
+            conferenceDataVersion=1,
+        ).execute()
+        return True
+    except Exception as e:
+        logger.info(f"An error occurred while sending the calendar invite: {e}")
+        return False
