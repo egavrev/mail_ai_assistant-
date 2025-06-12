@@ -11,6 +11,7 @@ from schemas import State
 
 
 from PIL import Image
+import io
 
 
 
@@ -164,8 +165,10 @@ graph_processor = graph_builder.compile()
 
 
 #save graph image to file 
+#TODO: add to main file to save graph image
 _ROOT = Path(__file__).parent.absolute()
-img = Image.open(graph_processor.get_graph(xray=True).draw_mermaid_png())
+png_bytes = graph_processor.get_graph(xray=True).draw_mermaid_png()
+img = Image.open(io.BytesIO(png_bytes))
 img.save(str(_ROOT / "graph.png"))
 
 
