@@ -9,3 +9,5 @@ langgraph>=0.0.10
 langchain_openai>=0.1.0
 python-dotenv>=1.0.0
 langchain-community>=0.1.0
+langgraph-checkpoint-sqlite
+langfuse

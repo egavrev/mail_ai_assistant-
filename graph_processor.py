@@ -12,6 +12,8 @@ from schemas import State
 
 from PIL import Image
 import io
+import sqlite3
+from langgraph.checkpoint.sqlite import SqliteSaver 
 
 
 
@@ -134,23 +136,26 @@ def send_email_node(state, config):
 
 def mark_as_read_node(state):
     #mark_as_read(state["email"]["id"])
-    print(">>>>> mark_as_read_node", state)
+    print("\n\n\n\>>>>> mark_as_read_node", state)
     pass
   
 
 def human_node(state: State):
-    print(">>>>> human_node", state)
+    print("\n\n\n>>>>> human_node", state)
     pass
 
 
 def notify(state: State):
-    print(">>>>> notify", state)
+    print("\n\n\n>>>>> notify", state)
     pass
 
 
 class ConfigSchema(TypedDict):
     db_id: int
     model: str
+
+
+
 
 
 graph_builder = StateGraph(State, config_schema=ConfigSchema)
@@ -160,16 +165,14 @@ graph_builder.add_node(notify)
 graph_builder.add_conditional_edges("triage_input", route_after_triage)
 graph_builder.set_entry_point("triage_input")
 graph_builder.add_edge("mark_as_read_node", END)
-graph_processor = graph_builder.compile()
 
 
 
-#save graph image to file 
-#TODO: add to main file to save graph image
-_ROOT = Path(__file__).parent.absolute()
-png_bytes = graph_processor.get_graph(xray=True).draw_mermaid_png()
-img = Image.open(io.BytesIO(png_bytes))
-img.save(str(_ROOT / "graph.png"))
+sqlite_conn = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
+store = SqliteSaver(sqlite_conn)
+graph_processor = graph_builder.compile(store=store)
+
+
 
 
 '''

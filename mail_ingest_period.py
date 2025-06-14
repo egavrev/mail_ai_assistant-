@@ -9,7 +9,26 @@ import hashlib
 import datetime
 from datetime import datetime as dt
 import json
+from pathlib import Path
+from PIL import Image
+import io
 
+
+from langfuse.langchain import CallbackHandler
+ 
+from langfuse import get_client
+ 
+langfuse = get_client()
+
+if langfuse.auth_check():
+    print("Langfuse client is authenticated and ready!")
+else:
+    print("Authentication failed. Please check your credentials and host.")
+
+
+langfuse_handler = CallbackHandler()
+
+_ROOT = Path(__file__).parent.absolute()
 
 def parse_date(date_str):
     try:
@@ -27,6 +46,7 @@ def main(
     gmail_token: Optional[str] = None,
     gmail_secret: Optional[str] = None,
     email_address: Optional[str] = None,
+    save_graph: bool = False,
 ):
    
     
@@ -41,12 +61,16 @@ def main(
         thread_id = str(
             uuid.UUID(hex=hashlib.md5(email["thread_id"].encode("UTF-8")).hexdigest())
         )
-        #TODO 2: add graph call
-        result =  graph_processor.invoke({"email":email})
-        break
+        result =  graph_processor.invoke({"email":email}, config={"callbacks": [langfuse_handler]})
+        
         
 
-        
+        if save_graph:
+            _ROOT = Path(__file__).parent.absolute()
+            png_bytes = graph_processor.get_graph(xray=True).draw_mermaid_png()
+            img = Image.open(io.BytesIO(png_bytes))
+            img.save(str(_ROOT / "graph.png"))
+
 
 
 if __name__ == "__main__":
@@ -81,7 +105,12 @@ if __name__ == "__main__":
         default=None,
         help="The email address to use to fetch emails from",
     )
-
+    parser.add_argument(
+        "--save-graph",
+        type=bool,
+        default=False,
+        help="Whether to save the graph image to a file",
+    )
     args = parser.parse_args()
     main(
         start_date=args.start_date,
@@ -89,4 +118,5 @@ if __name__ == "__main__":
         gmail_token=args.gmail_token,
         gmail_secret=args.gmail_secret,
         email_address=args.email_address,
+        save_graph=args.save_graph,
     )
