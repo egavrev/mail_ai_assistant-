@@ -22,13 +22,13 @@ triage_prompt = """You are {full_name}'s executive assistant. You are a top-notc
 
 {background}. 
 
-{name} gets lots of emails. Your job is to categorize the below email to see whether is it worth responding to.
+{name} gets lots of emails. Your job is to categorize the below email to triage them properly.
 
 Emails that are not worth responding to:
 {triage_no}
 
-Emails that are worth responding to:
-{triage_email}
+Emails that are worth to summarize:
+{summarize_email}
 
 There are also other things that {name} should know about, but don't require an email response. For these, you should notify {name} (using the `notify` response). Examples of this include:
 {triage_notify}
@@ -66,7 +66,7 @@ def triage_input(state: State, config: RunnableConfig, store: BaseStore):
         full_name=prompt_config["full_name"],
         background=prompt_config["background"],
         triage_no=prompt_config["triage_no"],
-        triage_email=prompt_config["triage_email"],
+        summarize_email=prompt_config["summarize_email"],
         triage_notify=prompt_config["triage_notify"],
     )
     model = llm.with_structured_output(RespondTo).bind(
