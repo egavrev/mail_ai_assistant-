@@ -7,8 +7,10 @@ from pathlib import Path
 from config import get_config
 from langchain_core.messages import ToolMessage
 from triage import triage_input
+from summarize import summarize_email
 from schemas import State
-
+from langchain_openai import ChatOpenAI
+from langchain_core.pydantic_v1 import BaseModel, Field
 
 from PIL import Image
 import io
@@ -18,20 +20,47 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from dotenv import load_dotenv
 load_dotenv()
 
+class EmailSummary(BaseModel):
+    """Summary of an email."""
+    summary: str = Field(description="A concise summary of the email content")
+    key_points: list[str] = Field(description="List of key points from the email")
+    action_items: list[str] = Field(description="List of any action items or tasks mentioned in the email")
+
+class ConfigSchema(TypedDict):
+    model: str
+
+def summarize_email_node(state: State, config: dict, store: SqliteSaver):
+    print("\n\n\n>>>>> summarize_email_node", state)
+    return summarize_email(state, config, store)
+
 def route_after_triage(
     state: State,
-    #TODO: add draft_response
-) -> Literal["save_statistics_node", "notify", "summarize_email_node"]:
-    if state["triage"].response == "no":
-        return "save_statistics_node"
-    elif state["triage"].response == "notify":
-        return "notify"
-    elif state["triage"].response == "summarize":
+) -> Literal["summarize_email_node", "save_statistics_node", "notify_node", END]:
+    """Route to the next node based on the triage result."""
+    if state["triage"].response == "summarize":
         return "summarize_email_node"
+    elif state["triage"].response == "notify":
+        return "notify_node"
+    elif state["triage"].response == "no":
+        return "save_statistics_node"
     else:
-        raise ValueError
+        return END
 
+def save_statistics_node(state: State):
+    """Save statistics about the email."""
+    return {"messages": [HumanMessage(content="Statistics saved.")]}
 
+def notify_node(state: State):
+    """Notify the user about the email."""
+    return {"messages": [HumanMessage(content="User notified.")]}
+
+def route_after_summarize(state: State) -> Literal["save_statistics_node", END]:
+    """Route after summarization."""
+    return "save_statistics_node"
+
+def route_after_notify(state: State) -> Literal["save_statistics_node", END]:
+    """Route after notification."""
+    return "save_statistics_node"
 
 def take_action(
     state: State,
@@ -60,7 +89,6 @@ def take_action(
     else:
         return "bad_tool_name"
 
-
 def bad_tool_name(state: State):
     tool_call = state["messages"][-1].tool_calls[0]
     message = f"Could not find tool with name `{tool_call['name']}`. Make sure you are calling one of the allowed tools!"
@@ -79,76 +107,42 @@ def notify(state: State):
     print("\n\n\n>>>>> notify", state)
     pass
 
-
-class ConfigSchema(TypedDict):
-    db_id: int
-    model: str
-
-
-def save_statistics_node(state: State):
-    print("\n\n\n>>>>> statistics_node", state)
-    pass
-
 def mail_action_node(state: State):
     print("\n\n\n>>>>> mail_action_node", state)
     pass
 
-def summarize_email_node(state: State):
-    print("\n\n\n>>>>> summarize_email_node", state)
-    pass
-
-graph_builder = StateGraph(State, config_schema=ConfigSchema)
-graph_builder.set_entry_point("triage_input")
-graph_builder.add_node(triage_input)
-graph_builder.add_node(summarize_email_node)
-graph_builder.add_node(mail_action_node)
-graph_builder.add_node(notify)
-graph_builder.add_node(save_statistics_node)
-
-graph_builder.add_conditional_edges("triage_input", route_after_triage)
-graph_builder.add_edge("summarize_email_node", "save_statistics_node")
-graph_builder.add_edge("notify", "save_statistics_node")
-graph_builder.add_edge("save_statistics_node", "mail_action_node")
-graph_builder.add_edge("mail_action_node", END)
-
-
-
+# Create the store first
 sqlite_conn = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
 store = SqliteSaver(sqlite_conn)
-graph_processor = graph_builder.compile(store=store)
 
-
-
-
-'''
-
+# Build the graph
 graph_builder = StateGraph(State, config_schema=ConfigSchema)
-graph_builder.add_node(human_node)
-graph_builder.add_node(triage_input)
-graph_builder.add_node(draft_response)
-graph_builder.add_node(send_message)
-graph_builder.add_node(rewrite)
-graph_builder.add_node(mark_as_read_node)
-graph_builder.add_node(send_email_draft)
-graph_builder.add_node(send_email_node)
-graph_builder.add_node(bad_tool_name)
-graph_builder.add_node(notify)
-graph_builder.add_node(send_cal_invite_node)
-graph_builder.add_node(send_cal_invite)
-graph_builder.add_conditional_edges("triage_input", route_after_triage)
+
+# Add all nodes with their required parameters
+graph_builder.add_node("triage_input", lambda state, config: triage_input(state, config, store))
+graph_builder.add_node("summarize_email_node", lambda state, config: summarize_email_node(state, config, store))
+graph_builder.add_node("save_statistics_node", save_statistics_node)
+graph_builder.add_node("notify_node", notify_node)
+
+# Set the entry point
 graph_builder.set_entry_point("triage_input")
-graph_builder.add_conditional_edges("draft_response", take_action)
-graph_builder.add_edge("send_message", "human_node")
-graph_builder.add_edge("send_cal_invite", "human_node")
-graph_builder.add_node(find_meeting_time)
-graph_builder.add_edge("find_meeting_time", "draft_response")
-graph_builder.add_edge("bad_tool_name", "draft_response")
-graph_builder.add_edge("send_cal_invite_node", "draft_response")
-graph_builder.add_edge("send_email_node", "mark_as_read_node")
-graph_builder.add_edge("rewrite", "send_email_draft")
-graph_builder.add_edge("send_email_draft", "human_node")
-graph_builder.add_edge("mark_as_read_node", END)
-graph_builder.add_edge("notify", "human_node")
-graph_builder.add_conditional_edges("human_node", enter_after_human)
-graph_processor = graph_builder.compile()"""
-'''
+
+# Add edges
+graph_builder.add_conditional_edges(
+    "triage_input",
+    route_after_triage,
+    {
+        "summarize_email_node": "summarize_email_node",
+        "notify_node": "notify_node",
+        "save_statistics_node": "save_statistics_node",
+        END: END,
+    }
+)
+
+# Add direct edges to save_statistics_node
+graph_builder.add_edge("summarize_email_node", "save_statistics_node")
+graph_builder.add_edge("notify_node", "save_statistics_node")
+graph_builder.add_edge("save_statistics_node", END)
+
+# Compile the graph
+graph_processor = graph_builder.compile()

@@ -8,7 +8,7 @@ load_dotenv()  # Load environment variables from .env file
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import RemoveMessage
-from langgraph.store.base import BaseStore
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 from schemas import (
     State,
@@ -48,10 +48,10 @@ Subject: {subject}
 {email_thread}"""
 
 #TODO: make it async and add store
-def triage_input(state: State, config: RunnableConfig, store: BaseStore):
+def triage_input(state: State, config: RunnableConfig, store: SqliteSaver):
     model = config["configurable"].get("model", "gpt-4o")
     llm = ChatOpenAI(model=model, temperature=0)
-    print("state", state)
+    print("state", state["email"]["from_email"])
     #examples = await get_few_shot_examples(state["email"], store, config)
     #TODO: add fewshot examples link iht store
     examples = ""
