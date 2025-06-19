@@ -60,22 +60,22 @@ def summarize_email(state: State, config: RunnableConfig, store: SqliteSaver):
     
     # Save to checkpoint store
     #write_config = {"configurable": {"thread_id": "1", "checkpoint_ns": "email_summaries"}}
-    try:
-        # Create a namespace and key for this summary
-        #key = state["email"]["id"]
-        #value = summary.dict()
-        key = 1
-        value = "test"
-        # Store the summary
-        namespace = ("memories", 1)
-        store.put(
-            namespace,
-            key,
-            value,
-            {key: value}
+    #try:
+    write_config = {"configurable": {"thread_id": state["email"]["id"], "checkpoint_ns": "email_summaries"}}
+    checkpoint = {
+        "v": 2,
+        "ts": state["email"]["send_time"],
+        "id": state["email"]["id"]
+    }
+   
+    store.put(
+            write_config,
+            checkpoint,
+            summary.dict(),
+            {state["email"]["id"]: summary.dict()}
         )
-    except Exception as e:
-        print(f"Warning: Failed to save summary to store: {e}")
+    #except Exception as e:
+     #   print(f"Warning: Failed to save summary to store: {e}")
     
     return {
         "summary": summary,
