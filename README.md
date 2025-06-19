@@ -1,9 +1,11 @@
 ## Tasks
 - [x] to create an script which is pushing 1 mail for notify or summarization.
 - [x] develop summarization function using gpt4o-mini
-- [ ] store summarization reulst in store DB 
-- [ ] develop notification fuction. 
-- [ ] store notification result into store DB
-- [ ] defein notification UI - telegram or web, define tasks on this.
+- [x] store summarization reulst in store DB 
+- [x] develop notification fuction. 
+- [x] store notification result into store DB
+- [ ] defein notification functionality, take data from DB, update trigger. 
+- [ ] defeine notificatio medai telegram or web
 - [ ] working on reflection graph
 - [ ] working on actions wiht mails, functional library, check in case it is possible to be done in bulk. 
+- [ ] add unit tests

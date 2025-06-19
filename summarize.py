@@ -41,7 +41,7 @@ Subject: {subject}
 
 def summarize_email(state: State, config: RunnableConfig, store: SqliteSaver):
     """Summarize the email content using GPT-4."""
-    model = config["configurable"].get("model", "gpt-4")
+    model = config["configurable"].get("model", "gpt-4o-mini")
     llm = ChatOpenAI(model=model, temperature=0)
     
     prompt_config = get_config(config)

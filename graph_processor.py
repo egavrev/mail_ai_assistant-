@@ -8,6 +8,7 @@ from config import get_config
 from langchain_core.messages import ToolMessage
 from triage import triage_input
 from summarize import summarize_email
+from notify import notify_user
 from schemas import State
 from langchain_openai import ChatOpenAI
 from langchain_core.pydantic_v1 import BaseModel, Field
@@ -33,6 +34,10 @@ def summarize_email_node(state: State, config: dict, store: SqliteSaver):
     print("\n\n\n>>>>> summarize_email_node", state)
     return summarize_email(state, config, store)
 
+def notify_node(state: State, config: dict, store: SqliteSaver):
+    print("\n\n\n>>>>> notify_node", state)
+    return notify_user(state, config, store)
+
 def route_after_triage(
     state: State,
 ) -> Literal["summarize_email_node", "save_statistics_node", "notify_node", END]:
@@ -49,10 +54,6 @@ def route_after_triage(
 def save_statistics_node(state: State):
     """Save statistics about the email."""
     return {"messages": [HumanMessage(content="Statistics saved.")]}
-
-def notify_node(state: State):
-    """Notify the user about the email."""
-    return {"messages": [HumanMessage(content="User notified.")]}
 
 def route_after_summarize(state: State) -> Literal["save_statistics_node", END]:
     """Route after summarization."""
@@ -103,13 +104,7 @@ def bad_tool_name(state: State):
         ]
     }
 
-def notify(state: State):
-    print("\n\n\n>>>>> notify", state)
-    pass
 
-def mail_action_node(state: State):
-    print("\n\n\n>>>>> mail_action_node", state)
-    pass
 
 # Create the store first
 sqlite_conn = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
@@ -121,8 +116,8 @@ graph_builder = StateGraph(State, config_schema=ConfigSchema)
 # Add all nodes with their required parameters
 graph_builder.add_node("triage_input", lambda state, config: triage_input(state, config, store))
 graph_builder.add_node("summarize_email_node", lambda state, config: summarize_email_node(state, config, store))
+graph_builder.add_node("notify_node", lambda state, config: notify_node(state, config, store))
 graph_builder.add_node("save_statistics_node", save_statistics_node)
-graph_builder.add_node("notify_node", notify_node)
 
 # Set the entry point
 graph_builder.set_entry_point("triage_input")
