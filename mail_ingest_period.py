@@ -15,6 +15,8 @@ import io
 
 
 from langfuse.langchain import CallbackHandler
+
+from db_manager import update_email_metadata # init_db should be called once at app startup
  
 from langfuse import get_client
  
@@ -111,6 +113,15 @@ if __name__ == "__main__":
         default=False,
         help="Whether to save the graph image to a file",
     )
+
+    #call for update_email_metadata
+    parser.add_argument(
+        "--update-email-metadata",
+        type=bool,
+        default=False,
+        help="Whether to update the email metadata",
+    )
+    
     args = parser.parse_args()
     main(
         start_date=args.start_date,

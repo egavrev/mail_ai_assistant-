@@ -6,6 +6,7 @@ __pycache__/
 #my config file
 config.yaml
 checkpoints.sqlite*
+email_summary_database*
 # C extensions
 *.so
 

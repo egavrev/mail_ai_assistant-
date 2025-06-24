@@ -4,8 +4,13 @@
 - [x] store summarization reulst in store DB 
 - [x] develop notification fuction. 
 - [x] store notification result into store DB
+- [ ] use sqlligt for sumamry storing as there is no need for 
+- [ ] for notifications we would need to use checkpointers as it will have man in the middle approach. 
 - [ ] defein notification functionality, take data from DB, update trigger. 
 - [ ] defeine notificatio medai telegram or web
 - [ ] working on reflection graph
 - [ ] working on actions wiht mails, functional library, check in case it is possible to be done in bulk. 
+- [ ] build statistics functions to draw as much insights as possible for assitant.
 - [ ] add unit tests
+- [ ] add an alarming on budget sepnt - try to use langfuse
+- [ ] 

@@ -15,6 +15,10 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from schemas import State
 from config import get_config
 
+# Import your new DB functions
+from db_manager import update_email_metadata # init_db should be called once at app startup
+
+
 class EmailSummary(BaseModel):
     """Summary of an email."""
     summary: str = Field(description="A concise summary of the email content")
@@ -77,6 +81,20 @@ def summarize_email(state: State, config: RunnableConfig, store: SqliteSaver):
     #except Exception as e:
      #   print(f"Warning: Failed to save summary to store: {e}")
     
+     # --- Regular Database Update for Metadata ---
+    # This stores only the simple, queryable fields
+    try:
+        update_email_metadata(
+            email_data=state["email"],
+            summary_status="summarized", # You can set different statuses like 'pending_review', 'error'
+            summary_text=summary.summary # Store a short version of the summary for quick lookup
+        )
+        print(f"Metadata for email {state['email']['id']} updated in external DB.")
+    except Exception as e:
+        print(f"Warning: Failed to update external DB for email {state['email']['id']}: {e}")
+
+
+
     return {
         "summary": summary,
         "messages": [ToolMessage(
