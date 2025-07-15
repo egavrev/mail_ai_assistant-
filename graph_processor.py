@@ -31,11 +31,11 @@ class ConfigSchema(TypedDict):
     model: str
 
 def summarize_email_node(state: State, config: dict, store: SqliteSaver):
-    print("\n\n\n>>>>> summarize_email_node", state)
+    print("\n\n\n>>>>> summarize_email_node", state["email"]["subject"])
     return summarize_email(state, config, store)
 
 def notify_node(state: State, config: dict, store: SqliteSaver):
-    print("\n\n\n>>>>> notify_node", state)
+    print("\n\n\n>>>>> notify_node", state["email"]["subject"])
     return notify_user(state, config, store)
 
 def route_after_triage(
@@ -53,6 +53,7 @@ def route_after_triage(
 
 def save_statistics_node(state: State):
     """Save statistics about the email."""
+    print("\n\n\n>>>>> save_statistics_node")
     return {"messages": [HumanMessage(content="Statistics saved.")]}
 
 def route_after_summarize(state: State) -> Literal["save_statistics_node", END]:

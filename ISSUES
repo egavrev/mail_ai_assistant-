@@ -1,0 +1,7 @@
+1. python ./mail_ingest_period.py --start-date="2025-05-08" --end-date="2025-05-11" --email-address="gavreveugen@gmail.com" 
+File "/Users/eugeniu/Documents/python/MailAsistant/mail_ai_assistant/triage.py", line 54, in triage_input
+    print("state", state["email"]["from_email"])
+                   ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'from_email'
+
+

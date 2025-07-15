@@ -16,7 +16,7 @@ import io
 
 from langfuse.langchain import CallbackHandler
 
-from db_manager import update_email_metadata # init_db should be called once at app startup
+from db_manager import init_db  # init_db should be called once at app startup
  
 from langfuse import get_client
  
@@ -49,6 +49,7 @@ def main(
     gmail_secret: Optional[str] = None,
     email_address: Optional[str] = None,
     save_graph: bool = False,
+    init_db: bool = False,
 ):
    
     
@@ -66,7 +67,8 @@ def main(
         result =  graph_processor.invoke({"email":email}, config={"callbacks": [langfuse_handler]})
         
         
-
+        if init_db:
+            init_db()
         if save_graph:
             _ROOT = Path(__file__).parent.absolute()
             png_bytes = graph_processor.get_graph(xray=True).draw_mermaid_png()
@@ -113,13 +115,12 @@ if __name__ == "__main__":
         default=False,
         help="Whether to save the graph image to a file",
     )
-
-    #call for update_email_metadata
+    
     parser.add_argument(
-        "--update-email-metadata",
+        "--init-db",
         type=bool,
         default=False,
-        help="Whether to update the email metadata",
+        help="Whether to initialize the database",
     )
     
     args = parser.parse_args()
@@ -130,4 +131,5 @@ if __name__ == "__main__":
         gmail_secret=args.gmail_secret,
         email_address=args.email_address,
         save_graph=args.save_graph,
+        init_db=args.init_db,
     )
