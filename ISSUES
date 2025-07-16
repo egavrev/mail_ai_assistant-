@@ -4,4 +4,10 @@ File "/Users/eugeniu/Documents/python/MailAsistant/mail_ai_assistant/triage.py",
                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
 KeyError: 'from_email'
 
+email: {
+id: "196b95b02d839a66"
+thread_id: "196b95ad3430674b"
+user_respond: true
+}
+
 

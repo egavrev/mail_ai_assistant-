@@ -51,7 +51,11 @@ Subject: {subject}
 def triage_input(state: State, config: RunnableConfig, store: SqliteSaver):
     model = config["configurable"].get("model", "gpt-4o")
     llm = ChatOpenAI(model=model, temperature=0)
-    print("state", state["email"]["from_email"])
+    try:
+        print("state", state["email"]["from_email"])
+    except KeyError:
+        print("state", state)
+        print("Error in triage_input", KeyError)
     #examples = await get_few_shot_examples(state["email"], store, config)
     #TODO: add fewshot examples link iht store
     examples = ""

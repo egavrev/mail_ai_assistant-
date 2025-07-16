@@ -51,7 +51,13 @@ def main(
     save_graph: bool = False,
     init_db: bool = False,
 ):
-   
+    if init_db:
+        init_db()
+    if save_graph:
+        _ROOT = Path(__file__).parent.absolute()
+        png_bytes = graph_processor.get_graph(xray=True).draw_mermaid_png()
+        img = Image.open(io.BytesIO(png_bytes))
+        img.save(str(_ROOT / "graph.png"))
     
     #TODO 1: revuild fetch_group_emails to fetch emails for a given period
     for email in fetch_emails(
@@ -64,16 +70,13 @@ def main(
         thread_id = str(
             uuid.UUID(hex=hashlib.md5(email["thread_id"].encode("UTF-8")).hexdigest())
         )
+        if email.get("user_respond"):
+            print("Skipping thread where user already responded:", email)
+            continue
         result =  graph_processor.invoke({"email":email}, config={"callbacks": [langfuse_handler]})
+       
         
         
-        if init_db:
-            init_db()
-        if save_graph:
-            _ROOT = Path(__file__).parent.absolute()
-            png_bytes = graph_processor.get_graph(xray=True).draw_mermaid_png()
-            img = Image.open(io.BytesIO(png_bytes))
-            img.save(str(_ROOT / "graph.png"))
 
 
 
