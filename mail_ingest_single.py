@@ -43,9 +43,9 @@ def parse_date(date_str):
 # This script is used to ingest emails from a given email address for a given period of time.
 # period is defining in days
 def main():
-    result = graph_processor.invoke({"email": email_summarize}, config={"callbacks": [langfuse_handler]})
+    #result = graph_processor.invoke({"email": email_summarize}, config={"callbacks": [langfuse_handler]})
     #init_db()
-    #result = graph_processor.invoke({"email": email_notify}, config={"callbacks": [langfuse_handler]})
+    result = graph_processor.invoke({"email": email_notify}, config={"callbacks": [langfuse_handler]})
         
 
         

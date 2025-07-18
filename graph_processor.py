@@ -112,7 +112,7 @@ sqlite_conn = sqlite3.connect("checkpoints.sqlite", check_same_thread=False)
 store = SqliteSaver(sqlite_conn)
 
 # Build the graph
-graph_builder = StateGraph(State, config_schema=ConfigSchema)
+graph_builder = StateGraph(State,  config_schema=ConfigSchema)
 
 # Add all nodes with their required parameters
 graph_builder.add_node("triage_input", lambda state, config: triage_input(state, config, store))
@@ -141,4 +141,4 @@ graph_builder.add_edge("notify_node", "save_statistics_node")
 graph_builder.add_edge("save_statistics_node", END)
 
 # Compile the graph
-graph_processor = graph_builder.compile()
+graph_processor = graph_builder.compile(interrupt_after=["notify_node"])

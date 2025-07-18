@@ -92,4 +92,24 @@ def update_email_notification(email_data: dict, notification_status: str, notifi
     finally:
         conn.close()
 
+def get_pending_notifications():
+    """
+    Returns all records from email_notification where notification_status is 'none'.
+    """
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT * FROM email_notification WHERE notification_status = ?
+        """, ("none",))
+        rows = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        results = [dict(zip(columns, row)) for row in rows]
+        return results
+    except Exception as e:
+        print(f"Error fetching pending notifications: {e}")
+        return []
+    finally:
+        conn.close()
+
 

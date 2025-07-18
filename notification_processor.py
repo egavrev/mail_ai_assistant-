@@ -1,0 +1,26 @@
+from db_manager import get_pending_notifications
+from langgraph.checkpoint.sqlite import SqliteSaver
+import os
+import sqlite3
+
+# Set up the checkpoint store (adjust path as needed)
+CHECKPOINT_DB = os.environ.get("CHECKPOINT_DB", "checkpoints.sqlite")
+conn = sqlite3.connect(CHECKPOINT_DB)
+store = SqliteSaver(conn)
+
+
+def process_pending_notifications():
+    pending = get_pending_notifications()
+    for notification in pending:
+        checkpoint_id = notification["id"]
+        # Attempt to load the checkpoint from the store
+        try:
+            # Namespace should match what was used for notifications
+            write_config = {"configurable": {"thread_id": checkpoint_id, "checkpoint_ns": "email_notifications"}}
+            checkpoint = store.get(write_config)
+            print(f"Loaded checkpoint for notification id {checkpoint_id}: {type(checkpoint)}")
+        except Exception as e:
+            print(f"Error loading checkpoint for id {checkpoint_id}: {e}")
+
+if __name__ == "__main__":
+    process_pending_notifications() 
