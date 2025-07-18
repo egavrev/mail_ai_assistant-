@@ -37,6 +37,15 @@ def notify_user(state: State, config: RunnableConfig, store: SqliteSaver):
             {email["id"]: notification.dict()}
         )
 
+    # Update the email_notification table in the database
+    from db_manager import update_email_notification
+    update_email_notification(
+        email_data=email,
+        notification_status="notified",
+        notification_reason=message,
+        action_to_take=None
+    )
+
     return {
         "notification": notification,
         "messages": [ToolMessage(

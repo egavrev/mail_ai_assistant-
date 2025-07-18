@@ -4,7 +4,7 @@ from typing import Optional
 from graph_processor import graph_processor
 from mail_processor import fetch_emails
 from email_data import email_summarize, email_notify
-
+from db_manager import init_db
 import uuid
 import hashlib
 import datetime
@@ -43,8 +43,9 @@ def parse_date(date_str):
 # This script is used to ingest emails from a given email address for a given period of time.
 # period is defining in days
 def main():
-    #result = graph_processor.invoke({"email": email_summarize}, config={"callbacks": [langfuse_handler]})
-    result = graph_processor.invoke({"email": email_notify}, config={"callbacks": [langfuse_handler]})
+    result = graph_processor.invoke({"email": email_summarize}, config={"callbacks": [langfuse_handler]})
+    #init_db()
+    #result = graph_processor.invoke({"email": email_notify}, config={"callbacks": [langfuse_handler]})
         
 
         
