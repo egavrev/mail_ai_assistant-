@@ -16,7 +16,7 @@
 - [x] add interuption after notification node.
 - [x] notification_processor.py check for new triggers, load check point with current state. 
 - [x] ISSUE: fix issue with empty check pointers - added last data 
-- [ ] ISSUE: keep list of all check points for any run, as now we have - ValueError: No checkpointer set
+- [x] ISSUE: keep list of all check points for any run, as now we have - ValueError: No checkpointer set
 - [ ] notification_processor.py update state according with human feedback, update reflection, resume execution.
 - [ ] define which functions can be used for mails which were notified - calendar schedule, draft an answer, delete mail, forwared mail. 
 - [ ] define reflection persitence and functionality, and UI to interact with it (TG, WEB).

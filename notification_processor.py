@@ -22,12 +22,13 @@ def process_pending_notifications():
             print(f"Loaded checkpoint for notification id {checkpoint_id}:", checkpoint["state"]["email"]["subject"])
         except Exception as e:
             print(f"Error loading checkpoint for id {checkpoint_id}: {e}")
+    print("--------------------------------")
+    write_config = {"configurable": {"thread_id": checkpoint_id, "checkpoint_ns": "graph_processor"}}
     states = list(graph_processor.get_state_history(write_config))
-
     for state in states:
         print(state.next)
         print(state.config["configurable"]["checkpoint_id"])
-        print()
+        print(state)
 
     
 

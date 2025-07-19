@@ -45,7 +45,8 @@ def parse_date(date_str):
 def main():
     #result = graph_processor.invoke({"email": email_summarize}, config={"callbacks": [langfuse_handler]})
     #init_db()
-    result = graph_processor.invoke({"email": email_notify}, config={"callbacks": [langfuse_handler]})
+    write_config = {"thread_id": email_notify["id"], "checkpoint_ns": "graph_processor"}
+    result = graph_processor.invoke({"email": email_notify}, config={"callbacks": [langfuse_handler], "configurable": write_config})
         
 
         

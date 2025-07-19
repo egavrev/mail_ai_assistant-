@@ -141,4 +141,4 @@ graph_builder.add_edge("notify_node", "save_statistics_node")
 graph_builder.add_edge("save_statistics_node", END)
 
 # Compile the graph
-graph_processor = graph_builder.compile(interrupt_after=["notify_node"])
+graph_processor = graph_builder.compile(interrupt_after=["notify_node"], checkpointer=store)
