@@ -27,7 +27,8 @@ def notify_user(state: State, config: RunnableConfig, store: SqliteSaver):
     checkpoint = {
         "v": 2,
         "ts": email["send_time"],
-        "id": email["id"]
+        "id": email["id"],
+        "state": state,
     }
    
     store.put(
